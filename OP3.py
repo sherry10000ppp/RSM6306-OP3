@@ -10,6 +10,7 @@ from scipy.stats import norm
 import time
 import math
 import logging
+import requests
 
 # Initialize services
 s = requests.Session()
