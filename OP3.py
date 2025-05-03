@@ -15,7 +15,7 @@ import logging
 
 # Initialize services
 s = requests.Session()
-s.headers.update({'X-API-key': 'U6WQDWWI'}) # Make sure you use YOUR API Key
+s.headers.update({'X-API-key': 'YQPBX6CUa'}) # Make sure you use YOUR API Key
 
 # Configuration
 ETF_TICKER = 'RTM'
