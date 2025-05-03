@@ -7,10 +7,10 @@ This script implements the volatility arbitrage strategy as a procedural flow.
 
 import numpy as np
 from scipy.stats import norm
+import requests
 import time
 import math
 import logging
-import requests
 
 # Initialize services
 s = requests.Session()
@@ -79,27 +79,27 @@ def black_scholes_implied_vol(S, K, T, price, option_type):
     
     return sigma
 
-def get_latest_news(news_id):
+def get_latest_news(news_id=0):
     resp = s.get('http://localhost:9999/v1/news', params = {'limit': 50}) # default limit is 20
     if resp.ok:
         news_query = resp.json()
 
-    return news_query[::-1][news_id]
+    return news_query[::-1]# [news_id]
 
 def get_volatility_forecast():
     """Check for new volatility forecasts from analysts"""
     global current_vol, next_vol_range, next_vol_mid
-    news = get_latest_news(-1)
-    
+    news = get_latest_news()
+
     for item in news:
       if "volatility forecast" in item['headline'].lower():
           if "current week" in item['body'].lower():
-              current_vol = float(item['body'].split('%')[0]) / 100
+              current_vol = int(item['body'].split('%')[0]) / 100
               print(f"Updated current volatility: {current_vol:.2%}")
               # logging.info(f"Updated current volatility: {current_vol:.2%}")
           elif "next week" in item['body'].lower():
               vol_range = item['body'].split('%')[0].split('-')
-              next_vol_range = (float(vol_range[0])/100, float(vol_range[1])/100)
+              next_vol_range = int(vol_range[0])/100, int(vol_range[1])/100
               next_vol_mid = sum(next_vol_range) / 2
               print(f"Updated next week volatility range: {next_vol_range[0]:.2%}-{next_vol_range[1]:.2%}")
                 # logging.info(f"Updated next week volatility range: {next_vol_range[0]:.2%}-{next_vol_range[1]:.2%}")
@@ -258,6 +258,7 @@ def execute_option_trades(mispriced_options):
         print(f"Option trade: {action} {max_trade} {ticker} at {price:.2f}")
         # logging.info(f"Option trade: {action} {max_trade} {ticker} at {price:.2f}")
 
+
 def close_all_positions():
     """Close all positions at end of trading period"""
     # Close options
@@ -265,27 +266,13 @@ def close_all_positions():
         if position != 0:
             action = 'SELL' if position > 0 else 'BUY'
             place_order(ticker, abs(position), action)
-            # api.submit_order({
-            #     'ticker': ticker,
-            #     'type': 'MARKET',
-            #     'quantity': abs(position),
-            #     'action': action
-            # })
-            # logging.info(f"Closing position: {action} {abs(position)} {ticker}")
     
     # Close ETF
-    etf_position = get_etf_position(ETF_TICKER)
+    etf_position = get_etf_position()
     if etf_position != 0:
         action = 'SELL' if etf_position > 0 else 'BUY'
-        place_order(ticker, abs(position), action)
-        # api.submit_order({
-        #     'ticker': ETF_TICKER,
-        #     'type': 'MARKET',
-        #     'quantity': abs(etf_position),
-        #     'action': action
-        # })
+        place_order(ETF_TICKER, abs(etf_position), action)
         print(f"Closing ETF: {action} {abs(etf_position)} shares")
-        # logging.info(f"Closing ETF: {action} {abs(etf_position)} shares")
 
 def run_strategy():
     """Main strategy execution loop"""
@@ -294,7 +281,7 @@ def run_strategy():
     # # Check case status
     # tick, status = get_tick()
     
-    while  status == 'ACTIVE' or tick <= 295:
+    while  status == 'ACTIVE' or last_hedge_time <= 295:
         try:
             # # Check case status
             # tick, status = get_tick()
