@@ -293,19 +293,23 @@ def run_strategy():
             # Get market data
             etf_bid, etf_ask = get_bid_ask(ETF_TICKER)
             etf_price = (etf_bid + etf_ask) / 2
+            print(etf_price)
             
             # Update volatility forecasts
             get_volatility_forecast()
+            print(current_vol, next_vol_mid)
             
             # Only trade if we have volatility forecasts
             if current_vol or next_vol_mid:
                 # Find and trade mispriced options
                 mispriced_options = find_mispriced_options(etf_price)
+                print(misprice_options)
                 if mispriced_options:
                     execute_option_trades(mispriced_options)
                 
                 # Recalculate Greeks
                 calculate_portfolio_greeks(etf_price)
+                print(portfolio_delta)
                 
                 # Periodic delta hedging
                 current_time, status = get_tick()
